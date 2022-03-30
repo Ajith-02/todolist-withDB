@@ -9,7 +9,9 @@ app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.static("public"));
 
-mongoose.connect("mongodb://localhost:27017/todolistDB");
+// mongoose.connect("mongodb://localhost:27017/todolistDB");
+
+mongoose.connect("mongodb+srv://Ajith:Ajith02@cluster0.cfypl.mongodb.net/todolistDB");
 
 const itemSchema = {
   name: String,
@@ -31,6 +33,14 @@ const item3 = new Item({
 
 const defaultItems = [item1, item2, item3];
 
+const listSchema = {
+  name: String,
+  items: [itemsSchema]
+};
+
+const List = mongoose.model("List", listSchema);
+
+
 app.get("/", function (req, res) {
   Item.find({}, function (err, foundItems) {
 
@@ -49,15 +59,50 @@ app.get("/", function (req, res) {
   });
 });
 
+
+app.get("/:customListName", function(req, res){
+  // console.log(req.params.customListName);
+  const customListName = req.params.customListName;
+
+List.findOne({name: customListName}, function(err, foundList){
+  if(!err){
+    if(!foundList){
+      console.log("Doesn't exist");
+    }else {
+      console.log("Exists");
+    }
+  }
+})
+
+  const list = new List({
+    name: customListName,
+    items: defaultItems
+  });
+  list.save();
+});
+
 app.post("/", function (req, res) {
-  
+
   const itemName = req.body.newItem;
   const item = new Item({
     name: itemName
   });
 item.save();
-res.redirect("/");
- 
+res.redirect("/"); 
+});
+
+app.post("/delete", function(req, res){
+  // console.log(req.body.checkbox);
+  const ckeckedItemId = req.body.checkbox;
+
+  Item.findByIdAndRemove(ckeckedItemId, function(err){
+    if(err){
+      console.log(err);
+    }else{
+      console.log("Deleted");
+      res.redirect("/");
+    }
+  })
 });
 
 app.get("/work", function (req, res) {
@@ -68,6 +113,14 @@ app.get("/about", function (req, res) {
   res.render("about");
 });
 
-app.listen(3000, function () {
-  console.log("Server started on port 3000");
+let port = process.env.PORT;
+if(port == null || port == ""){
+  port = 3000;
+}
+
+
+app.listen(port, function () {
+  console.log("Server started");
 });
+
+
