@@ -11,7 +11,9 @@ app.use(express.static("public"));
 
 // mongoose.connect("mongodb://localhost:27017/todolistDB");
 
-mongoose.connect("mongodb+srv://Ajith:Ajith02@cluster0.cfypl.mongodb.net/todolistDB");
+mongoose.connect(
+  "mongodb+srv://Ajith:Ajith02@cluster0.cfypl.mongodb.net/todolistDB"
+);
 
 const itemSchema = {
   name: String,
@@ -35,15 +37,13 @@ const defaultItems = [item1, item2, item3];
 
 const listSchema = {
   name: String,
-  items: [itemSchema]
+  items: [itemSchema],
 };
 
 const List = mongoose.model("List", listSchema);
 
-
 app.get("/", function (req, res) {
   Item.find({}, function (err, foundItems) {
-
     if (foundItems.length === 0) {
       Item.insertMany(defaultItems, function (err) {
         if (err) {
@@ -59,55 +59,65 @@ app.get("/", function (req, res) {
   });
 });
 
-
-app.get("/:customListName", function(req, res){
+app.get("/:customListName", function (req, res) {
   // console.log(req.params.customListName);
   const customListName = req.params.customListName;
 
-List.findOne({name: customListName}, function(err, foundList){
-  if(!err){
-    if(!foundList){
-      // console.log("Doesn't exist");
-      //Create a new list
-      const list = new List({
-        name: customListName,
-        items: defaultItems
-      });
-      list.save();
-      res.redirect("/" + customListName);
-    }else {
-      // console.log("Exists");
-      //show an existing list
-      res.render("list", { listTitle: foundList.name, newListItems: foundList.items });
+  List.findOne({ name: customListName }, function (err, foundList) {
+    if (!err) {
+      if (!foundList) {
+        // console.log("Doesn't exist");
+        //Create a new list
+        const list = new List({
+          name: customListName,
+          items: defaultItems,
+        });
+        list.save();
+        res.redirect("/" + customListName);
+      } else {
+        // console.log("Exists");
+        //show an existing list
+        res.render("list", {
+          listTitle: foundList.name,
+          newListItems: foundList.items,
+        });
+      }
     }
-  }
-})
-
-  
+  });
 });
 
 app.post("/", function (req, res) {
-
   const itemName = req.body.newItem;
+  const listName = req.body.list;
+
   const item = new Item({
-    name: itemName
+    name: itemName,
   });
-item.save();
-res.redirect("/"); 
+
+  if (listName === "Today") {
+    item.save();
+    res.redirect("/");
+  } else {
+    List.findOne({ name: listName }, function (err, foundList) {
+      foundList.items.push(item);
+      foundList.save();
+      res.redirect("/" + listName);
+    });
+  }
 });
 
-app.post("/delete", function(req, res){
+app.post("/delete", function (req, res) {
   // console.log(req.body.checkbox);
   const ckeckedItemId = req.body.checkbox;
 
-  Item.findByIdAndRemove(ckeckedItemId, function(err){
-    if(err){
+  Item.findByIdAndRemove(ckeckedItemId, function (err) {
+    if (err) {
       console.log(err);
-    }else{
+    } else {
       console.log("Deleted");
       res.redirect("/");
     }
-  })
+  });
 });
 
 app.get("/work", function (req, res) {
@@ -119,13 +129,10 @@ app.get("/about", function (req, res) {
 });
 
 let port = process.env.PORT;
-if(port == null || port == ""){
+if (port == null || port == "") {
   port = 3000;
 }
-
 
 app.listen(port, function () {
   console.log("Server started");
 });
-
-
