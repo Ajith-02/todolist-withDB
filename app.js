@@ -35,7 +35,7 @@ const defaultItems = [item1, item2, item3];
 
 const listSchema = {
   name: String,
-  items: [itemsSchema]
+  items: [itemSchema]
 };
 
 const List = mongoose.model("List", listSchema);
@@ -67,18 +67,23 @@ app.get("/:customListName", function(req, res){
 List.findOne({name: customListName}, function(err, foundList){
   if(!err){
     if(!foundList){
-      console.log("Doesn't exist");
+      // console.log("Doesn't exist");
+      //Create a new list
+      const list = new List({
+        name: customListName,
+        items: defaultItems
+      });
+      list.save();
+      res.redirect("/" + customListName);
     }else {
-      console.log("Exists");
+      // console.log("Exists");
+      //show an existing list
+      res.render("list", { listTitle: foundList.name, newListItems: foundList.items });
     }
   }
 })
 
-  const list = new List({
-    name: customListName,
-    items: defaultItems
-  });
-  list.save();
+  
 });
 
 app.post("/", function (req, res) {
